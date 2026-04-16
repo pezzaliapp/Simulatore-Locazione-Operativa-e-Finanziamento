@@ -36,6 +36,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <title>SLOF — Locazione & Finanziamento</title>
 <style>
 /* ======================================================
@@ -276,6 +277,40 @@ table.coeff tr:nth-child(even) td{background:rgba(255,255,255,.02);}
 .spese-table td:last-child{text-align:right;font-weight:600;}
 
 input[type="file"]{display:none;}
+
+/* ---- IMPORT/EXPORT ---- */
+.import-zone{
+  border:2px dashed var(--border);border-radius:var(--r);
+  padding:24px;text-align:center;cursor:pointer;transition:.2s;
+  background:var(--bg3);margin-bottom:12px;
+}
+.import-zone:hover,.import-zone.drag{border-color:var(--accent);background:rgba(0,184,148,.04);}
+.import-zone-icon{font-size:32px;margin-bottom:8px;}
+.import-zone-text{font-size:13px;font-weight:600;color:var(--text);}
+.import-zone-sub{font-size:11px;color:var(--text2);margin-top:4px;}
+
+/* Modal preview import */
+#import-modal{
+  display:none;position:fixed;inset:0;z-index:9100;
+  background:rgba(0,0,0,.85);backdrop-filter:blur(4px);
+  overflow-y:auto;padding:16px;
+}
+.import-modal-box{
+  max-width:520px;margin:0 auto;background:var(--card);
+  border:1px solid var(--border);border-radius:var(--r);padding:20px;
+}
+.import-sheet-tag{
+  display:inline-block;background:rgba(0,184,148,.15);color:var(--accent);
+  border-radius:6px;padding:3px 10px;font-size:10px;font-weight:700;
+  margin:2px;letter-spacing:.3px;
+}
+.import-sheet-tag.warn{background:rgba(243,156,18,.15);color:var(--warn);}
+.import-preview-table{width:100%;font-size:10px;border-collapse:collapse;margin-top:8px;}
+.import-preview-table th,.import-preview-table td{
+  border:1px solid var(--border);padding:4px 6px;text-align:center;
+}
+.import-preview-table th{background:var(--bg3);color:var(--text2);}
+
 
 /* ---- SHARE BUTTONS ---- */
 .share-row{display:flex;gap:8px;margin-top:14px;}
@@ -528,7 +563,8 @@ input[type="file"]{display:none;}
     <button class="coeff-tab active" onclick="switchCoeffTab('nm',this)">Noleggio Mensile</button>
     <button class="coeff-tab" onclick="switchCoeffTab('nt',this)">Noleggio Trimestrale</button>
     <button class="coeff-tab" onclick="switchCoeffTab('fi',this)">Finanziamento</button>
-    <button class="coeff-tab" onclick="switchCoeffTab('spese',this)">Spese Contratto</button>
+    <button class="coeff-tab" onclick="switchCoeffTab('spese',this)">Spese & Oneri</button>
+    <button class="coeff-tab" onclick="switchCoeffTab('import',this)">📥 Importa</button>
   </div>
 
   <div class="coeff-panel active" id="coeffpanel-nm">
@@ -566,7 +602,7 @@ input[type="file"]{display:none;}
 
   <div class="coeff-panel" id="coeffpanel-spese">
     <div class="section">
-      <div class="section-title">Spese Contratto — Noleggio Operativo (€)</div>
+      <div class="section-title">Spese & Oneri — Noleggio Operativo (€)</div>
       <div class="coeff-table-wrap"><table class="coeff" id="table-spese-n"></table></div>
       <div class="btn-row" style="margin-bottom:14px">
         <button class="btn btn-accent" onclick="saveCoeff('spese-n')">💾 Salva</button>
@@ -574,11 +610,74 @@ input[type="file"]{display:none;}
       </div>
     </div>
     <div class="section">
-      <div class="section-title">Spese Contratto — Finanziamento (€)</div>
+      <div class="section-title">Spese & Oneri — Finanziamento (€)</div>
       <div class="coeff-table-wrap"><table class="coeff" id="table-spese-f"></table></div>
       <div class="btn-row">
         <button class="btn btn-accent" onclick="saveCoeff('spese-f')">💾 Salva</button>
         <button class="btn btn-ghost" onclick="resetCoeff('spese-f')">↺ Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- IMPORTA / ESPORTA -->
+  <div class="coeff-panel" id="coeffpanel-import">
+    <div class="section">
+      <div class="section-title">📥 Importa Coefficienti da File</div>
+      <div class="info-box" style="margin-bottom:12px">
+        <strong>Formati supportati: Excel (.xlsx) e CSV (.csv)</strong><br>
+        Il file deve seguire la struttura del template. Ogni foglio (o sezione CSV)
+        corrisponde a una categoria di coefficienti. I valori importati
+        sovrascrivono quelli attuali dopo conferma.
+      </div>
+
+      <!-- Drag & drop zone -->
+      <div class="import-zone" id="import-dropzone"
+           onclick="document.getElementById('import-file-input').click()"
+           ondragover="event.preventDefault();this.classList.add('drag')"
+           ondragleave="this.classList.remove('drag')"
+           ondrop="handleImportDrop(event)">
+        <div class="import-zone-icon">📂</div>
+        <div class="import-zone-text">Trascina qui il file oppure tocca per sfogliare</div>
+        <div class="import-zone-sub">Excel .xlsx · CSV .csv</div>
+      </div>
+      <input type="file" id="import-file-input" accept=".xlsx,.xls,.csv"
+             onchange="handleImportFile(event)">
+    </div>
+
+    <div class="section">
+      <div class="section-title">📤 Esporta / Scarica Template</div>
+      <div class="info-box" style="margin-bottom:12px">
+        Scarica il template Excel precompilato con i tuoi coefficienti attuali.
+        Modificalo con i tuoi valori reali e reimportalo.
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-accent" onclick="exportExcel()">
+          📊 Esporta coefficienti attuali (.xlsx)
+        </button>
+      </div>
+      <div class="btn-row" style="margin-top:8px">
+        <button class="btn btn-ghost" onclick="exportCSV()">
+          📄 Esporta come CSV
+        </button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">📋 Struttura attesa del file</div>
+      <div style="font-size:11px;color:var(--text2);line-height:1.8">
+        <strong style="color:var(--text)">Excel (.xlsx) — Fogli richiesti:</strong><br>
+        • <code style="color:var(--accent)">NM</code> — Noleggio Mensile (%)<br>
+        • <code style="color:var(--accent)">NT</code> — Noleggio Trimestrale (%)<br>
+        • <code style="color:var(--accent)">FI</code> — Finanziamento (%)<br>
+        • <code style="color:var(--accent)">Spese_N</code> — Spese & Oneri Noleggio<br>
+        • <code style="color:var(--accent)">Spese_F</code> — Spese & Oneri Finanziamento<br><br>
+        <strong style="color:var(--text)">Intestazioni colonne per NM / NT / FI:</strong><br>
+        <code>Fascia | 12m | 18m | 24m | 36m | 48m | 60m</code><br><br>
+        <strong style="color:var(--text)">Intestazioni per Spese_N / Spese_F:</strong><br>
+        <code>Voce | Valore</code><br><br>
+        <strong style="color:var(--text)">CSV:</strong> prima colonna = tipo
+        (<code>NM</code>/<code>NT</code>/<code>FI</code>/<code>SN</code>/<code>SF</code>),
+        poi i valori nelle colonne successive.
       </div>
     </div>
   </div>
@@ -705,8 +804,39 @@ input[type="file"]{display:none;}
 </div><!-- end scroll-area -->
 
 <!-- ================================================
-     DISCLAIMER MODAL (prima apertura)
+     IMPORT MODAL — con mapping fogli
      ================================================ -->
+<div id="import-modal">
+  <div class="import-modal-box">
+    <div style="font-size:17px;font-weight:700;margin-bottom:4px">📥 Importa coefficienti</div>
+    <div style="font-size:11px;color:var(--text2);margin-bottom:14px" id="import-filename"></div>
+
+    <!-- STEP 1: MAPPING -->
+    <div id="import-step-mapping">
+      <div style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.6">
+        Per ogni foglio/sezione del tuo file, scegli a quale categoria corrisponde.
+        Lascia <strong style="color:var(--text)">— Ignora —</strong> per i fogli da non importare.
+      </div>
+      <div id="import-sheet-rows"></div>
+      <div style="display:flex;gap:8px;margin-top:16px">
+        <button class="btn btn-accent" onclick="applyMapping()">▶ Anteprima dati</button>
+        <button class="btn btn-ghost" onclick="closeImportModal()">✕ Annulla</button>
+      </div>
+    </div>
+
+    <!-- STEP 2: PREVIEW -->
+    <div id="import-step-preview" style="display:none">
+      <div id="import-preview-content"></div>
+      <div style="display:flex;gap:8px;margin-top:16px">
+        <button class="btn btn-accent" onclick="confirmImport()">✅ Conferma e importa</button>
+        <button class="btn btn-ghost" onclick="backToMapping()">← Modifica</button>
+        <button class="btn btn-ghost" onclick="closeImportModal()">✕ Annulla</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 <div id="disclaimer-overlay" style="
   display:none;position:fixed;inset:0;z-index:9000;
   background:rgba(0,0,0,.85);backdrop-filter:blur(6px);
@@ -799,22 +929,27 @@ const DEFAULT = {
     [50000, 8.848, 6.007, 4.589, 3.176, 2.476, 2.063],
   ],
   'spese-n': [ // Spese contratto Noleggio
-    ['≤ 5.000',       75],
-    ['5.001–10.000',  100],
-    ['10.001–25.000', 150],
-    ['25.001–50.000', 225],
-    ['50.001–100.000',300],
-    ['> 100.001',     300],
-    ['Spese incasso/canone', 4], // +IVA
+    ['Contratto ≤ 5.000',       75],
+    ['Contratto 5.001–10.000',  100],
+    ['Contratto 10.001–25.000', 150],
+    ['Contratto 25.001–50.000', 225],
+    ['Contratto 50.001–100.000',300],
+    ['Contratto > 100.001',     300],
+    ['Spese incasso/canone',    4],
+    ['Spese RIBA',              0],
+    ['Riscatto (% val. iniziale)', 1],
+    ['Quota assicurazione/anno',0],
   ],
   'spese-f': [ // Spese contratto Finanziamento
-    ['≤ 5.000',       50],
-    ['5.001–10.000',  75],
-    ['10.001–25.000', 100],
-    ['25.001–50.000', 150],
-    ['Spese incasso/rata',  4],  // +IVA
-    ['Spese istruttoria min', 100],
-    ['Spese istruttoria max', 300],
+    ['Contratto ≤ 5.000',       50],
+    ['Contratto 5.001–10.000',  75],
+    ['Contratto 10.001–25.000', 100],
+    ['Contratto 25.001–50.000', 150],
+    ['Spese incasso/rata',      4],
+    ['Spese istruttoria min',   100],
+    ['Spese istruttoria max',   300],
+    ['Spese RIBA',              0],
+    ['Imposta registro (prima rata)', 0],
   ],
 };
 
@@ -1006,7 +1141,6 @@ function switchCoeffTab(name, btn) {
   btn.classList.add('active');
   document.getElementById('coeffpanel-'+name).classList.add('active');
 }
-
 /* =======================================================
    NOLEGGIO — SIMULATOR
    ======================================================= */
@@ -1240,6 +1374,310 @@ function viewDoc(docId) {
 /* =======================================================
    UTILITIES
    ======================================================= */
+/* =======================================================
+   IMPORT — Excel / CSV con mapping manuale fogli
+   ======================================================= */
+const CAT_LABELS = {
+  'nm':      '📅 Coefficienti Noleggio Mensile (%)',
+  'nt':      '📆 Coefficienti Noleggio Trimestrale (%)',
+  'fi':      '💳 Coefficienti Finanziamento (%)',
+  'spese-n': '🏢 Spese & Oneri Noleggio (€)',
+  'spese-f': '💳 Spese & Oneri Finanziamento (€)',
+  '':        '— Ignora questo foglio —',
+};
+
+let rawSheets    = {};   // { sheetName: rawRows[] }
+let pendingImport = {};  // { 'nm': parsedRows, ... } dopo mapping
+
+// ---- Auto-detect categoria da nome foglio e struttura dati ----
+function autoDetectCategory(sheetName, rows) {
+  const n = sheetName.toLowerCase().replace(/[\s_-]/g,'');
+  if (n === 'nm' || n.includes('mensile'))    return 'nm';
+  if (n === 'nt' || n.includes('trimestrale'))return 'nt';
+  if (n === 'fi' || n.includes('finanz'))     return 'fi';
+  if (n === 'spesen' || n.includes('spesen') || n.includes('onerino')) return 'spese-n';
+  if (n === 'spesef' || n.includes('spesef') || n.includes('onerifi')) return 'spese-f';
+  // Heuristica struttura: se ha 7+ colonne numeriche → coefficienti; se 2 colonne → spese
+  const dataRow = rows.find(r => r.some(c => !isNaN(parseFloat(c)) && parseFloat(c) > 0));
+  if (!dataRow) return '';
+  const numCols = dataRow.filter(c => !isNaN(parseFloat(c))).length;
+  if (numCols >= 6) return 'nm'; // default coefficienti
+  if (numCols <= 2) return 'spese-n'; // default spese
+  return '';
+}
+
+function handleImportDrop(event) {
+  event.preventDefault();
+  document.getElementById('import-dropzone').classList.remove('drag');
+  const file = event.dataTransfer.files[0];
+  if (file) parseImportFile(file);
+}
+function handleImportFile(event) {
+  const file = event.target.files[0];
+  if (file) parseImportFile(file);
+  event.target.value = '';
+}
+
+function parseImportFile(file) {
+  const name = file.name.toLowerCase();
+  const reader = new FileReader();
+  if (name.endsWith('.csv')) {
+    reader.onload = e => loadCSVSheets(e.target.result, file.name);
+    reader.readAsText(file, 'UTF-8');
+  } else if (name.endsWith('.xlsx') || name.endsWith('.xls')) {
+    reader.onload = e => loadXLSXSheets(e.target.result, file.name);
+    reader.readAsArrayBuffer(file);
+  } else {
+    showToast('⚠️ Formato non supportato. Usa .xlsx o .csv');
+  }
+}
+
+// ---- Carica tutti i fogli XLSX come rawSheets ----
+function loadXLSXSheets(arrayBuffer, filename) {
+  try {
+    const wb = XLSX.read(arrayBuffer, {type:'array'});
+    rawSheets = {};
+    wb.SheetNames.forEach(sn => {
+      rawSheets[sn] = XLSX.utils.sheet_to_json(wb.Sheets[sn], {header:1, defval:''});
+    });
+    showMappingStep(filename);
+  } catch(e) {
+    showToast('⚠️ Errore lettura Excel: ' + e.message);
+  }
+}
+
+// ---- Carica CSV: raggruppa per prima colonna come "foglio" ----
+function loadCSVSheets(text, filename) {
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  rawSheets = {};
+  lines.forEach(line => {
+    const cols = line.split(/[,;]/).map(c => c.trim().replace(/^"|"$/g,''));
+    const tipo = cols[0] || 'Foglio1';
+    if (!rawSheets[tipo]) rawSheets[tipo] = [];
+    rawSheets[tipo].push(cols.slice(1));
+  });
+  showMappingStep(filename);
+}
+
+// ---- STEP 1: Mapping UI ----
+function showMappingStep(filename) {
+  if (!Object.keys(rawSheets).length) {
+    showToast('⚠️ File vuoto o non leggibile');
+    return;
+  }
+
+  document.getElementById('import-filename').textContent = '📄 ' + filename;
+  document.getElementById('import-step-mapping').style.display = 'block';
+  document.getElementById('import-step-preview').style.display = 'none';
+
+  const optionsHTML = Object.keys(CAT_LABELS).map(k =>
+    `<option value="${k}">${CAT_LABELS[k]}</option>`
+  ).join('');
+
+  let html = '';
+  Object.entries(rawSheets).forEach(([sn, rows]) => {
+    const auto   = autoDetectCategory(sn, rows);
+    const nRows  = rows.length;
+    // Anteprima prima riga dati non vuota
+    const sample = rows.find(r => r.some(c => String(c).trim())) || [];
+    const preview = sample.slice(0,4).map(c => String(c).substring(0,12)).join(' | ');
+
+    html += `
+    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm);
+                padding:12px;margin-bottom:10px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">
+        <div style="font-size:12px;font-weight:700;color:var(--text);flex:1">
+          📋 ${sn}
+          <span style="font-size:10px;color:var(--text2);font-weight:400;margin-left:6px">
+            ${nRows} righe
+          </span>
+        </div>
+        ${auto ? `<span class="import-sheet-tag">Auto: ${CAT_LABELS[auto].replace(/^[^\s]+ /,'')}</span>` : ''}
+      </div>
+      <div style="font-size:10px;color:var(--text3);margin-bottom:8px;
+                  font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+        ${preview || '—'}
+      </div>
+      <select data-sheet="${sn}" style="
+        width:100%;background:var(--bg);border:1px solid var(--border);
+        border-radius:6px;color:var(--text);font-family:inherit;
+        font-size:12px;padding:8px 10px;outline:none;
+      ">
+        ${Object.keys(CAT_LABELS).map(k =>
+          `<option value="${k}" ${k === auto ? 'selected' : ''}>${CAT_LABELS[k]}</option>`
+        ).join('')}
+      </select>
+    </div>`;
+  });
+
+  document.getElementById('import-sheet-rows').innerHTML = html;
+  document.getElementById('import-modal').style.display = 'block';
+}
+
+// ---- STEP 2: applica mapping → preview ----
+function applyMapping() {
+  const selects = document.querySelectorAll('#import-sheet-rows select');
+  pendingImport = {};
+
+  selects.forEach(sel => {
+    const sn  = sel.dataset.sheet;
+    const key = sel.value;
+    if (!key) return; // ignora
+    const rows = rawSheets[sn];
+    const isSpese = key.startsWith('spese');
+    const parsed  = isSpese ? parseSpeseRows(rows) : parseCoeffRows(rows);
+    if (!parsed.length) return;
+    // Merge se più fogli assegnati alla stessa categoria
+    if (!pendingImport[key]) pendingImport[key] = parsed;
+    else pendingImport[key] = pendingImport[key].concat(parsed);
+  });
+
+  if (!Object.keys(pendingImport).length) {
+    showToast('⚠️ Nessun foglio assegnato — seleziona almeno una categoria');
+    return;
+  }
+
+  // Mostra preview
+  let html = '';
+  Object.entries(pendingImport).forEach(([key, rows]) => {
+    const isSpese = key.startsWith('spese');
+    html += `<div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:6px">
+        <span class="import-sheet-tag">${CAT_LABELS[key]}</span>
+        <span style="color:var(--text2);font-size:10px;margin-left:6px">${rows.length} righe</span>
+      </div>`;
+    if (!isSpese) {
+      html += `<div style="overflow-x:auto"><table class="import-preview-table">
+        <tr><th>Fascia</th><th>12m</th><th>18m</th><th>24m</th><th>36m</th><th>48m</th><th>60m</th></tr>`;
+      rows.slice(0,4).forEach(r => {
+        html += `<tr><td>${r[0]}</td>${[1,2,3,4,5,6].map(i=>`<td>${parseFloat(r[i]||0).toFixed(4)}</td>`).join('')}</tr>`;
+      });
+      if (rows.length > 4) html += `<tr><td colspan="7" style="color:var(--text3)">… +${rows.length-4} righe</td></tr>`;
+      html += `</table></div>`;
+    } else {
+      html += `<div style="overflow-x:auto"><table class="import-preview-table">
+        <tr><th>Voce</th><th>Valore</th></tr>`;
+      rows.slice(0,6).forEach(r => {
+        html += `<tr><td style="text-align:left">${r[0]}</td><td>${r[1]}</td></tr>`;
+      });
+      if (rows.length > 6) html += `<tr><td colspan="2" style="color:var(--text3)">… +${rows.length-6} voci</td></tr>`;
+      html += `</table></div>`;
+    }
+    html += `</div>`;
+  });
+
+  document.getElementById('import-preview-content').innerHTML = html;
+  document.getElementById('import-step-mapping').style.display = 'none';
+  document.getElementById('import-step-preview').style.display = 'block';
+}
+
+function backToMapping() {
+  document.getElementById('import-step-preview').style.display = 'none';
+  document.getElementById('import-step-mapping').style.display = 'block';
+}
+
+// ---- Row parsers ----
+function parseCoeffRows(rows) {
+  const result = [];
+  rows.forEach((row, i) => {
+    if (i === 0 && isNaN(parseFloat(row[0])) && isNaN(parseFloat(row[1]))) return;
+    const max = parseFloat(String(row[0]).replace(/[^\d.]/g,''));
+    if (isNaN(max) || max <= 0) return;
+    const vals = [max];
+    for (let c = 1; c <= 6; c++) vals.push(parseFloat(row[c]) || 0);
+    result.push(vals);
+  });
+  return result;
+}
+function parseSpeseRows(rows) {
+  const result = [];
+  rows.forEach((row, i) => {
+    if (i === 0 && isNaN(parseFloat(row[1]))) return;
+    const label = String(row[0]).trim();
+    const val   = parseFloat(String(row[1]).replace(',','.')) || 0;
+    if (label) result.push([label, val]);
+  });
+  return result;
+}
+
+function confirmImport() {
+  Object.entries(pendingImport).forEach(([key, rows]) => {
+    if (!rows.length) return;
+    COEFF[key] = rows;
+    localStorage.setItem('slof_coeff_'+key, JSON.stringify(rows));
+  });
+  buildCoeffTables();
+  closeImportModal();
+  showToast('✅ Coefficienti importati e salvati');
+  document.querySelectorAll('.coeff-tab')[0].click();
+}
+
+function closeImportModal() {
+  document.getElementById('import-modal').style.display = 'none';
+  pendingImport = {};
+  rawSheets = {};
+}
+
+/* =======================================================
+   EXPORT — Excel / CSV
+   ======================================================= */
+function exportExcel() {
+  if (typeof XLSX === 'undefined') { showToast('⚠️ XLSX non disponibile offline'); return; }
+  const wb = XLSX.utils.book_new();
+
+  // Fogli coefficienti
+  const coeffSheets = [
+    {key:'nm', name:'NM', title:['Fascia','12m','18m','24m','36m','48m','60m']},
+    {key:'nt', name:'NT', title:['Fascia','12m','18m','24m','36m','48m','60m']},
+    {key:'fi', name:'FI', title:['Fascia','12m','18m','24m','36m','48m','60m']},
+  ];
+  coeffSheets.forEach(({key, name, title}) => {
+    const data = COEFF[key];
+    const rows = [title, ...data.map((r,i) => {
+      const prev = i===0 ? 0 : data[i-1][0];
+      const label = i===0 ? `≤ ${r[0]}` : i===data.length-1 ? `> ${prev}` : `${prev+1}–${r[0]}`;
+      return [label, ...r.slice(1).map(v => parseFloat(v).toFixed(4))];
+    })];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), name);
+  });
+
+  // Fogli spese
+  [['spese-n','Spese_N'],['spese-f','Spese_F']].forEach(([key, name]) => {
+    const rows = [['Voce','Valore'], ...COEFF[key].map(r => [r[0], r[1]])];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), name);
+  });
+
+  const date = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, `SLOF_Coefficienti_${date}.xlsx`);
+  showToast('📊 File Excel scaricato');
+}
+
+function exportCSV() {
+  let csv = 'TIPO,FASCIA_O_VOCE,12m_o_VALORE,18m,24m,36m,48m,60m\n';
+  const coeffKeys = [['nm','NM'],['nt','NT'],['fi','FI']];
+  coeffKeys.forEach(([key, tipo]) => {
+    COEFF[key].forEach((r,i) => {
+      const data = COEFF[key];
+      const prev = i===0 ? 0 : data[i-1][0];
+      const label = i===0 ? `≤${r[0]}` : i===data.length-1 ? `>${prev}` : `${prev+1}-${r[0]}`;
+      csv += `${tipo},${label},${r.slice(1).map(v=>parseFloat(v).toFixed(4)).join(',')}\n`;
+    });
+  });
+  [['spese-n','SN'],['spese-f','SF']].forEach(([key, tipo]) => {
+    COEFF[key].forEach(r => {
+      csv += `${tipo},"${r[0]}",${r[1]}\n`;
+    });
+  });
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `SLOF_Coefficienti_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  showToast('📄 CSV scaricato');
+}
+
 function acceptDisclaimer() {
   localStorage.setItem('slof_disclaimer_accepted', '1');
   document.getElementById('disclaimer-overlay').style.display = 'none';
