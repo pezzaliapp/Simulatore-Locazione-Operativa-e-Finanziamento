@@ -1,11 +1,12 @@
 # SLOF — Simulatore Locazione Operativa e Finanziamento
 
 > **PWA professionale per la simulazione di Noleggio Operativo e Finanziamento Finalizzato**  
-> Progettata per agenti e venditori convenzionati BCC Rent&Lease S.p.A.
+> Parte del ramo AI sperimentale di **PezzaliApp** — by Alessandro Pezzali
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![PWA](https://img.shields.io/badge/PWA-Installabile-00b894)](https://pezzaliapp.com)
 [![Autore](https://img.shields.io/badge/Autore-Alessandro%20Pezzali-6c5ce7)](https://pezzaliapp.com)
+[![AI Branch](https://img.shields.io/badge/PezzaliApp-AI%20Branch-4fc3f7)](https://pezzaliapp.com)
 
 ---
 
@@ -29,20 +30,20 @@
 ### 🏢 Simulatore Noleggio Operativo
 - Calcolo canone **mensile** o **trimestrale**
 - Durate: 12 / 18 / 24 / 36 / 48 / 60 mesi
-- Coefficienti BCC Rent&Lease aggiornati ad **aprile 2026**
+- Coefficienti precaricati **a titolo di esempio operativo** — aggiornabili dall'app
 - Rilevamento automatico fascia importo e spese contratto
 - Checklist documenti dinamica (soglie €15.000 / €30.000 / €50.000)
 
 ### 💳 Simulatore Finanziamento Finalizzato
 - Calcolo rata mensile
 - Durate: 12 / 18 / 24 / 36 / 48 / 60 mesi
-- Coefficienti BCC aggiornati a **ottobre 2025**
+- Coefficienti precaricati **a titolo di esempio operativo** — aggiornabili dall'app
 - Importo: €2.000–€50.000 IVA inclusa
 - Checklist documenti dinamica (soglie €15.000 / €30.000)
 
 ### 📄 Gestione Documenti
-- Lista completa di tutti i documenti richiesti per ogni prodotto
-- Upload PDF dal dispositivo (salvato localmente)
+- Lista completa documenti richiesti per ogni prodotto (obbligatori e condizionali)
+- Upload PDF dal dispositivo (salvato localmente, nessun server)
 - Visualizzazione in-app dei PDF caricati
 - Sostituzione documenti in qualsiasi momento
 
@@ -51,15 +52,21 @@
 - **TXT**: file di testo scaricabile per archiviazione
 - **Copia**: testo negli appunti per incollarlo ovunque
 
-### ⚙️ Impostazioni Coefficienti
+### ⚙️ Impostazioni & Coefficienti
 - Tabelle editabili per tutti i coefficienti (Noleggio Mensile, Trimestrale, Finanziamento)
-- Gestione spese contratto per fascia
-- Salvataggio locale su localStorage
-- Reset ai valori originali con un tap
+- Gestione spese & oneri per fascia (contratto, RIBA, riscatto, istruttoria, assicurazione)
+- Salvataggio locale su localStorage — nessun dato inviato a server
+- Reset ai valori di default con un tap
+
+### 📥 Importa / Esporta Coefficienti
+- **Importa da Excel (.xlsx) o CSV (.csv)** con mapping manuale foglio→categoria
+- Auto-detection categoria basata su nome foglio e struttura colonne
+- Anteprima dati prima della conferma dell'importazione
+- **Esporta** i coefficienti attuali come Excel o CSV per modifica e re-import
 
 ### 🔄 Auto-aggiornamento
 - Service Worker con strategia **network-first**
-- Aggiornamento automatico alla nuova versione senza azione manuale
+- Aggiornamento automatico senza cancellare cache manualmente
 - Banner notifica quando è disponibile un aggiornamento
 
 ---
@@ -68,27 +75,27 @@
 
 ```
 Simulatore-Locazione-Operativa-e-Finanziamento/
-├── index.html          # Applicazione completa (single-file)
-├── sw.js               # Service Worker (auto-update)
+├── index.html          # Applicazione completa (single-file, ~1.2 MB con GIF embed)
+├── sw.js               # Service Worker (auto-update, network-first)
 ├── manifest.json       # Configurazione PWA
-├── icon-180.png        # Icona iOS (apple-touch-icon)
-├── icon-192.png        # Icona Android / PWA
-├── icon-512.png        # Icona splash / store
+├── icon-180.png        # Icona iOS (apple-touch-icon 180×180)
+├── icon-192.png        # Icona Android / PWA (192×192)
+├── icon-512.png        # Icona splash / maskable (512×512)
 ├── splash-*.png        # Splash screen per tutti i dispositivi iOS
 └── README.md           # Questa documentazione
 ```
 
 ---
 
-## 🚀 Deploy su GitHub Pages (gratis)
+## 🚀 Deploy su GitHub Pages (gratuito)
 
 ```bash
-# 1. Crea il repository su github.com con il nome:
+# 1. Crea il repository su github.com:
 #    Simulatore-Locazione-Operativa-e-Finanziamento
 
 # 2. Carica tutti i file nella root del branch main
 
-# 3. Vai in: Settings → Pages → Source: "Deploy from branch" → main → / (root)
+# 3. Settings → Pages → Source: "Deploy from branch" → main → / (root)
 
 # 4. L'app sarà disponibile a:
 #    https://[tuousername].github.io/Simulatore-Locazione-Operativa-e-Finanziamento/
@@ -96,25 +103,24 @@ Simulatore-Locazione-Operativa-e-Finanziamento/
 
 ### Aggiornare l'app
 Per ogni aggiornamento (nuovi coefficienti, funzionalità, bug fix):
-1. Incrementa `CACHE_VERSION` in `sw.js` (es. da `slof-v1.0.0` a `slof-v1.0.1`)
-2. Esegui il commit e push su GitHub
-3. Tutti i dispositivi installatati riceveranno l'aggiornamento automaticamente
+1. Modifica i file necessari
+2. Incrementa `CACHE_VERSION` in `sw.js` (es. `slof-v1.0.0` → `slof-v1.0.1`)
+3. Esegui commit e push su GitHub
+4. Tutti i dispositivi installati ricevono l'aggiornamento automaticamente
 
 ---
 
-## 🔧 Coefficienti inclusi
+## 📥 Flusso di aggiornamento coefficienti
 
-### Noleggio Operativo — Canone Mensile (aprile 2026)
-| Fascia importo | 12 m | 18 m | 24 m | 36 m | 48 m | 60 m |
-|---|---|---|---|---|---|---|
-| ≤ 5.000 € | 8.2439% | 5.9311% | 4.6504% | 3.3168% | 2.6190% | 2.2041% |
-| ≤ 15.000 € | 8.2877% | 5.9535% | 4.6604% | 3.3134% | 2.6076% | 2.1877% |
-| ≤ 25.000 € | 8.2722% | 5.9386% | 4.6458% | 3.2988% | 2.5928% | 2.1725% |
-| ≤ 50.000 € | 8.2206% | 5.8894% | 4.5973% | 3.2505% | 2.5436% | 2.1223% |
-| ≤ 100.000 € | 8.1133% | 5.8065% | 4.5278% | 3.1946% | 2.4944% | 2.0769% |
-| > 100.000 € | 8.0166% | 5.7338% | 4.4682% | 3.1485% | 2.4553% | 2.0418% |
-
-> Coefficienti trimestrali e tabella finanziamento inclusi nell'app.
+```
+App → "Importa" → Esporta Excel attuale
+    → Apri in Excel / Numbers / Google Sheets
+    → Modifica con i tuoi valori reali
+    → Salva → Reimporta nell'app
+    → Assegna ogni foglio alla categoria
+    → Anteprima → Conferma
+    → Salvato in localStorage ✅
+```
 
 ---
 
@@ -122,25 +128,21 @@ Per ogni aggiornamento (nuovi coefficienti, funzionalità, bug fix):
 
 **Strumento indicativo.** SLOF è un simulatore a uso interno con finalità esclusivamente
 informative. I risultati prodotti **non costituiscono offerta contrattuale, consulenza
-finanziaria o impegno di alcun tipo** da parte dell'autore o di BCC Rent&Lease S.p.A.
-
-**Limitazione di responsabilità dell'autore.** Alessandro Pezzali — PezzaliApp declina
-ogni responsabilità per:
-- errori od omissioni nei coefficienti inseriti
-- variazioni successive delle condizioni da parte dell'istituto finanziatore
-- decisioni commerciali o finanziarie prese sulla base dei calcoli dell'app
-- imprecisioni derivanti dall'implementazione algoritmica
-- contributi generati tramite intelligenza artificiale nel processo di sviluppo
-
-I valori ufficiali e vincolanti sono **esclusivamente quelli comunicati da BCC Rent&Lease S.p.A.**
-mediante documentazione contrattuale ufficiale.
+finanziaria o impegno di alcun tipo** da parte dell'autore.
 
 **Coefficienti a titolo di esempio.** I coefficienti precaricati nell'applicazione sono
 forniti **esclusivamente a titolo di esempio operativo**. Ogni azienda, agente o utente
 può disporre di condizioni, accordi e coefficienti propri, negoziati direttamente con
-l'istituto finanziatore, che possono differire significativamente da quelli inseriti
-per default. L'utente è responsabile dell'aggiornamento dei coefficienti nella sezione
-Impostazioni con i valori reali del proprio accordo commerciale.
+il proprio istituto finanziatore, che possono differire significativamente da quelli
+inseriti per default. L'utente è **responsabile esclusivo** dell'aggiornamento dei
+coefficienti con i valori reali del proprio accordo commerciale.
+
+**Limitazione di responsabilità.** Alessandro Pezzali — PezzaliApp declina ogni
+responsabilità per: errori nei coefficienti, scostamenti rispetto agli accordi individuali,
+decisioni commerciali prese sulla base dei calcoli dell'app, imprecisioni derivanti
+dall'implementazione algoritmica o da contributi generati tramite intelligenza artificiale
+nel processo di sviluppo. I valori ufficiali e vincolanti sono esclusivamente quelli
+del proprio contratto con l'istituto finanziatore.
 
 ---
 
@@ -177,9 +179,9 @@ SOFTWARE.
 **Alessandro Pezzali**  
 🌐 [pezzaliapp.com](https://pezzaliapp.com) · [alessandropezzali.it](https://alessandropezzali.it)  
 🐙 [github.com/PezzaliStack](https://github.com/PezzaliStack)  
-📦 Parte del progetto open source **PezzaliApp**
+📦 Parte del ramo AI sperimentale open source **PezzaliApp**
 
 ---
 
-*SLOF è un progetto indipendente di Alessandro Pezzali — PezzaliApp,  
-non affiliato ufficialmente con BCC Rent&Lease S.p.A. o Gruppo BCC Iccrea.*
+*SLOF è un progetto indipendente di Alessandro Pezzali — PezzaliApp.*  
+*Non affiliato con alcun istituto finanziatore.*
