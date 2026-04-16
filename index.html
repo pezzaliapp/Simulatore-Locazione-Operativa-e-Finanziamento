@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#00b894">
+<meta name="description" content="Simulatore Locazione Operativa e Finanziamento BCC — PezzaliApp">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SLOF">
+<link rel="manifest" href="./manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<title>SLOF — Locazione & Finanziamento</title>
+<style>
+/* ======================================================
+   DESIGN SYSTEM — PezzaliApp / SLOF
+   ====================================================== */
+:root {
+  --bg:      #121212;
+  --bg2:     #1a1a1a;
+  --bg3:     #222;
+  --card:    #1e1e1e;
+  --border:  #2e2e2e;
+  --accent:  #00b894;
+  --accent2: #00cec9;
+  --fin:     #6c5ce7;   /* viola per finanziamento */
+  --danger:  #e74c3c;
+  --warn:    #f39c12;
+  --ok:      #00b894;
+  --text:    #f0f0f0;
+  --text2:   #aaa;
+  --text3:   #555;
+  --r:       12px;
+  --r-sm:    8px;
+  --sh:      0 4px 24px rgba(0,0,0,.4);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow:hidden;}
+body{font-family:'Poppins',sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column;}
+
+/* ---- UPDATE BANNER ---- */
+#update-banner{
+  display:none;background:#f39c12;color:#000;
+  padding:10px 16px;font-size:13px;font-weight:600;
+  text-align:center;cursor:pointer;flex-shrink:0;
+}
+#update-banner span{margin-left:8px;text-decoration:underline;}
+
+/* ---- TOPBAR ---- */
+.topbar{
+  background:var(--bg2);border-bottom:1px solid var(--border);
+  padding:12px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0;
+  padding-top:calc(12px + env(safe-area-inset-top));
+}
+.topbar-icon{font-size:22px;line-height:1;}
+.topbar-title{font-size:14px;font-weight:700;line-height:1.2;}
+.topbar-sub{font-size:9px;color:var(--accent);font-weight:600;letter-spacing:.6px;text-transform:uppercase;}
+.topbar-badge{
+  margin-left:auto;background:var(--accent);color:#000;
+  font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;letter-spacing:.4px;
+}
+
+/* ---- TAB NAV ---- */
+.tab-nav{
+  display:flex;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.tab-btn{
+  flex:1;border:none;background:none;color:var(--text2);
+  padding:10px 4px 8px;font-family:inherit;font-size:10px;font-weight:500;
+  cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;
+  border-bottom:2px solid transparent;transition:.2s;
+}
+.tab-btn .ti{font-size:18px;}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);}
+.tab-btn.active-fin{color:var(--fin);border-bottom-color:var(--fin);}
+
+/* ---- SCROLL AREA ---- */
+.scroll-area{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+
+/* ---- PANELS ---- */
+.panel{display:none;padding:16px;padding-bottom:32px;}
+.panel.active{display:block;}
+
+/* ---- SECTION ---- */
+.section{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:14px;}
+.section-title{font-size:11px;font-weight:600;color:var(--text2);letter-spacing:.6px;text-transform:uppercase;margin-bottom:12px;}
+
+/* ---- INPUTS ---- */
+.field{margin-bottom:12px;}
+.field label{display:block;font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:500;}
+.field input,.field select{
+  width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm);
+  color:var(--text);font-family:inherit;font-size:14px;padding:10px 12px;outline:none;
+  transition:.2s;
+}
+.field input:focus,.field select:focus{border-color:var(--accent);}
+.field-row{display:flex;gap:10px;}
+.field-row .field{flex:1;}
+.field select option{background:var(--bg3);}
+
+/* color variation for finanziamento inputs */
+.fin-mode .field input:focus,.fin-mode .field select:focus{border-color:var(--fin);}
+
+/* ---- RADIO GROUP ---- */
+.radio-group{display:flex;gap:8px;}
+.radio-btn{
+  flex:1;border:1px solid var(--border);border-radius:var(--r-sm);
+  padding:8px;text-align:center;cursor:pointer;font-size:12px;font-weight:500;
+  transition:.2s;color:var(--text2);
+}
+.radio-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(0,184,148,.08);}
+.radio-btn.active-fin{border-color:var(--fin);color:var(--fin);background:rgba(108,92,231,.08);}
+
+/* ---- RESULT BOX ---- */
+.result-box{
+  background:var(--bg);border:1px solid var(--border);border-radius:var(--r);
+  padding:16px;margin-top:14px;
+}
+.result-main{
+  display:flex;flex-direction:column;align-items:center;padding:16px 0 12px;
+  border-bottom:1px solid var(--border);margin-bottom:14px;
+}
+.result-label{font-size:11px;color:var(--text2);font-weight:500;letter-spacing:.4px;text-transform:uppercase;margin-bottom:4px;}
+.result-value{font-size:38px;font-weight:700;color:var(--accent);line-height:1.1;}
+.result-value.fin-val{color:var(--fin);}
+.result-unit{font-size:13px;color:var(--text2);margin-top:2px;}
+.result-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.result-item{background:var(--bg3);border-radius:var(--r-sm);padding:10px;}
+.result-item-label{font-size:10px;color:var(--text2);margin-bottom:3px;}
+.result-item-value{font-size:15px;font-weight:600;}
+.result-item-value.ok{color:var(--ok);}
+.result-item-value.fin{color:var(--fin);}
+.result-item.full{grid-column:1/-1;}
+
+/* ---- CHECKLIST ---- */
+.checklist{margin-top:14px;}
+.cl-title{font-size:11px;font-weight:600;color:var(--text2);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px;}
+.cl-item{
+  display:flex;align-items:flex-start;gap:10px;
+  padding:9px 10px;border-radius:var(--r-sm);margin-bottom:6px;
+  background:var(--bg3);border:1px solid var(--border);
+  font-size:12px;
+}
+.cl-item.required{border-color:rgba(0,184,148,.2);}
+.cl-item.conditional{border-color:rgba(243,156,18,.2);}
+.cl-item.required .cl-icon{color:var(--ok);}
+.cl-item.conditional .cl-icon{color:var(--warn);}
+.cl-icon{font-size:15px;margin-top:1px;flex-shrink:0;}
+.cl-text strong{display:block;font-weight:600;margin-bottom:1px;}
+.cl-text span{color:var(--text2);font-size:11px;}
+
+/* ---- DOCUMENTS ---- */
+.doc-subtabs{display:flex;gap:8px;margin-bottom:14px;}
+.doc-stab{
+  flex:1;padding:8px;border:1px solid var(--border);border-radius:var(--r-sm);
+  background:none;color:var(--text2);font-family:inherit;font-size:12px;font-weight:600;
+  cursor:pointer;transition:.2s;
+}
+.doc-stab.active{background:var(--accent);border-color:var(--accent);color:#000;}
+.doc-stab.active-fin{background:var(--fin);border-color:var(--fin);color:#fff;}
+.doc-panel{display:none;}
+.doc-panel.active{display:block;}
+
+.doc-card{
+  background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);
+  padding:12px 14px;margin-bottom:10px;display:flex;align-items:center;gap:12px;
+}
+.doc-icon{font-size:24px;flex-shrink:0;}
+.doc-info{flex:1;}
+.doc-name{font-size:13px;font-weight:600;margin-bottom:2px;}
+.doc-desc{font-size:11px;color:var(--text2);}
+.doc-badge{
+  font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;margin-top:4px;
+  display:inline-block;
+}
+.badge-req{background:rgba(0,184,148,.15);color:var(--ok);}
+.badge-cond{background:rgba(243,156,18,.15);color:var(--warn);}
+.doc-actions{display:flex;flex-direction:column;gap:6px;flex-shrink:0;}
+.doc-btn{
+  border:none;border-radius:6px;padding:5px 10px;font-family:inherit;
+  font-size:10px;font-weight:600;cursor:pointer;transition:.2s;
+  display:flex;align-items:center;gap:4px;
+}
+.doc-btn-view{background:rgba(0,184,148,.15);color:var(--ok);}
+.doc-btn-view:hover{background:rgba(0,184,148,.25);}
+.doc-btn-replace{background:rgba(255,255,255,.06);color:var(--text2);}
+.doc-btn-replace:hover{background:rgba(255,255,255,.12);}
+.doc-status{font-size:9px;font-weight:600;margin-top:4px;text-align:center;}
+.doc-status.uploaded{color:var(--ok);}
+.doc-status.empty{color:var(--text3);}
+
+/* ---- SETTINGS / COEFFICIENTI ---- */
+.coeff-tabs{display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;padding-bottom:4px;}
+.coeff-tab{
+  border:1px solid var(--border);border-radius:var(--r-sm);padding:6px 12px;
+  background:none;color:var(--text2);font-family:inherit;font-size:11px;font-weight:600;
+  cursor:pointer;white-space:nowrap;transition:.2s;
+}
+.coeff-tab.active{background:var(--accent);border-color:var(--accent);color:#000;}
+.coeff-panel{display:none;}
+.coeff-panel.active{display:block;}
+
+.coeff-table-wrap{overflow-x:auto;}
+table.coeff{width:100%;border-collapse:collapse;font-size:11px;}
+table.coeff th,table.coeff td{
+  border:1px solid var(--border);padding:6px 4px;text-align:center;
+}
+table.coeff th{background:var(--bg3);color:var(--text2);font-weight:600;font-size:10px;}
+table.coeff td input{
+  width:70px;background:transparent;border:none;color:var(--text);
+  font-family:inherit;font-size:11px;text-align:center;outline:none;
+  padding:2px;border-bottom:1px solid transparent;transition:.2s;
+}
+table.coeff td input:focus{border-bottom-color:var(--accent);}
+table.coeff tr:nth-child(even) td{background:rgba(255,255,255,.02);}
+
+.btn{
+  border:none;border-radius:var(--r-sm);padding:11px 16px;
+  font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:6px;transition:.2s;width:100%;
+}
+.btn-accent{background:var(--accent);color:#000;}
+.btn-accent:hover{background:#00cec9;}
+.btn-ghost{background:rgba(255,255,255,.06);color:var(--text);}
+.btn-ghost:hover{background:rgba(255,255,255,.1);}
+.btn-danger{background:rgba(231,76,60,.15);color:var(--danger);}
+.btn-danger:hover{background:rgba(231,76,60,.25);}
+.btn-row{display:flex;gap:8px;margin-top:10px;}
+.btn-row .btn{flex:1;}
+
+.info-box{
+  background:rgba(0,184,148,.07);border:1px solid rgba(0,184,148,.2);
+  border-radius:var(--r-sm);padding:10px 12px;font-size:11px;color:var(--text2);
+  margin-bottom:12px;line-height:1.5;
+}
+.info-box.warn{background:rgba(243,156,18,.07);border-color:rgba(243,156,18,.2);}
+.info-box strong{color:var(--text);display:block;margin-bottom:4px;}
+
+.toast{
+  position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+  background:#333;color:#fff;padding:10px 20px;border-radius:20px;
+  font-size:12px;font-weight:600;z-index:9999;opacity:0;
+  transition:opacity .3s;pointer-events:none;white-space:nowrap;
+}
+.toast.show{opacity:1;}
+
+.spese-table{width:100%;font-size:11px;margin-top:8px;}
+.spese-table td{padding:4px 6px;}
+.spese-table td:first-child{color:var(--text2);}
+.spese-table td:last-child{text-align:right;font-weight:600;}
+
+input[type="file"]{display:none;}
+</style>
+</head>
+<body>
+
+<!-- Auto-update banner -->
+<div id="update-banner" onclick="doUpdate()">
+  🔄 Aggiornamento disponibile!<span>Tocca per applicare</span>
+</div>
+
+<!-- Top bar -->
+<div class="topbar">
+  <div class="topbar-icon">💰</div>
+  <div>
+    <div class="topbar-title">SLOF</div>
+    <div class="topbar-sub">Locazione Operativa &amp; Finanziamento</div>
+  </div>
+  <div class="topbar-badge">BCC</div>
+</div>
+
+<!-- Tab nav -->
+<div class="tab-nav">
+  <button class="tab-btn active" onclick="switchTab('noleggio',this)" id="tab-noleggio">
+    <span class="ti">🏢</span>Noleggio
+  </button>
+  <button class="tab-btn" onclick="switchTab('finanziamento',this)" id="tab-finanziamento">
+    <span class="ti">💳</span>Finanziamento
+  </button>
+  <button class="tab-btn" onclick="switchTab('documenti',this)" id="tab-documenti">
+    <span class="ti">📄</span>Documenti
+  </button>
+  <button class="tab-btn" onclick="switchTab('impostazioni',this)" id="tab-impostazioni">
+    <span class="ti">⚙️</span>Impostazioni
+  </button>
+</div>
+
+<!-- Scroll area -->
+<div class="scroll-area">
+
+<!-- ================================================
+     PANEL 1: NOLEGGIO OPERATIVO
+     ================================================ -->
+<div class="panel active" id="panel-noleggio">
+  <div class="section">
+    <div class="section-title">Parametri Simulazione</div>
+
+    <div class="field">
+      <label>Importo bene (€, IVA ESCLUSA)</label>
+      <input type="number" id="n-importo" placeholder="es. 8000" min="1500" oninput="calcNoleggio()">
+    </div>
+
+    <div class="field">
+      <label>Durata contratto</label>
+      <div class="radio-group" id="n-durata-group">
+        <div class="radio-btn" onclick="setDurata('n',12,this)">12 m</div>
+        <div class="radio-btn" onclick="setDurata('n',18,this)">18 m</div>
+        <div class="radio-btn active" onclick="setDurata('n',24,this)">24 m</div>
+        <div class="radio-btn" onclick="setDurata('n',36,this)">36 m</div>
+        <div class="radio-btn" onclick="setDurata('n',48,this)">48 m</div>
+        <div class="radio-btn" onclick="setDurata('n',60,this)">60 m</div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Periodicità canone</label>
+      <div class="radio-group" id="n-periodo-group">
+        <div class="radio-btn active" onclick="setPeriodo('mensile',this)">📅 Mensile</div>
+        <div class="radio-btn" onclick="setPeriodo('trimestrale',this)">📆 Trimestrale</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Risultato -->
+  <div class="result-box" id="n-result-box" style="display:none">
+    <div class="result-main">
+      <div class="result-label" id="n-result-label">Canone Mensile</div>
+      <div class="result-value" id="n-canone">—</div>
+      <div class="result-unit">€ / canone (IVA esclusa)</div>
+    </div>
+    <div class="result-grid">
+      <div class="result-item">
+        <div class="result-item-label">Numero canoni</div>
+        <div class="result-item-value ok" id="n-ncanoni">—</div>
+      </div>
+      <div class="result-item">
+        <div class="result-item-label">Spese contratto</div>
+        <div class="result-item-value ok" id="n-spese-contr">—</div>
+      </div>
+      <div class="result-item">
+        <div class="result-item-label">Spese incasso/canone</div>
+        <div class="result-item-value ok">€ 4,00 + IVA</div>
+      </div>
+      <div class="result-item">
+        <div class="result-item-label">Importo finanziato</div>
+        <div class="result-item-value ok" id="n-importo-fin">—</div>
+      </div>
+      <div class="result-item full">
+        <div class="result-item-label">Totale pagato (canoni × n + spese)</div>
+        <div class="result-item-value ok" id="n-totale">—</div>
+      </div>
+    </div>
+
+    <!-- Checklist documenti -->
+    <div class="checklist" id="n-checklist"></div>
+  </div>
+
+  <div class="info-box" style="margin-top:0">
+    <strong>ℹ️ Noleggio Operativo — BCC Rent&amp;Lease</strong>
+    Solo beni nuovi · Canoni comprensivi di assicurazione · Da € 1.500 + IVA
+    · Trimestrale per importi € 1.500–3.000 · Pagamento fornitore: 7 giorni
+  </div>
+</div>
+
+<!-- ================================================
+     PANEL 2: FINANZIAMENTO
+     ================================================ -->
+<div class="panel" id="panel-finanziamento">
+  <div class="section fin-mode">
+    <div class="section-title">Parametri Simulazione</div>
+
+    <div class="field">
+      <label>Importo finanziato (€, IVA INCLUSA)</label>
+      <input type="number" id="f-importo" placeholder="es. 10000" min="2000" max="50000" oninput="calcFinanziamento()">
+    </div>
+
+    <div class="field">
+      <label>Durata contratto</label>
+      <div class="radio-group" id="f-durata-group">
+        <div class="radio-btn" onclick="setDurata('f',12,this)">12 m</div>
+        <div class="radio-btn" onclick="setDurata('f',18,this)">18 m</div>
+        <div class="radio-btn active" onclick="setDurata('f',24,this)">24 m</div>
+        <div class="radio-btn" onclick="setDurata('f',36,this)">36 m</div>
+        <div class="radio-btn" onclick="setDurata('f',48,this)">48 m</div>
+        <div class="radio-btn" onclick="setDurata('f',60,this)">60 m</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="result-box" id="f-result-box" style="display:none">
+    <div class="result-main">
+      <div class="result-label">Rata Mensile</div>
+      <div class="result-value fin-val" id="f-rata">—</div>
+      <div class="result-unit">€ / mese (IVA inclusa)</div>
+    </div>
+    <div class="result-grid">
+      <div class="result-item">
+        <div class="result-item-label">Numero rate</div>
+        <div class="result-item-value fin" id="f-nrate">—</div>
+      </div>
+      <div class="result-item">
+        <div class="result-item-label">Spese contratto</div>
+        <div class="result-item-value fin" id="f-spese-contr">—</div>
+      </div>
+      <div class="result-item">
+        <div class="result-item-label">Spese incasso/rata</div>
+        <div class="result-item-value fin">€ 4,00 + IVA</div>
+      </div>
+      <div class="result-item">
+        <div class="result-item-label">Importo finanziato</div>
+        <div class="result-item-value fin" id="f-importo-show">—</div>
+      </div>
+      <div class="result-item full">
+        <div class="result-item-label">Totale pagato (rate × n + spese)</div>
+        <div class="result-item-value fin" id="f-totale">—</div>
+      </div>
+    </div>
+
+    <div class="checklist" id="f-checklist"></div>
+  </div>
+
+  <div class="info-box warn" style="margin-top:0">
+    <strong>ℹ️ Finanziamento Finalizzato — BCC Rent&amp;Lease</strong>
+    Beni nuovi, usati, accessori, software (12–60 m) · Consumabili: solo 12 m
+    · Importo: € 2.000–50.000 IVA incl. · Pagamento fornitore: 15 giorni
+  </div>
+</div>
+
+<!-- ================================================
+     PANEL 3: DOCUMENTI
+     ================================================ -->
+<div class="panel" id="panel-documenti">
+  <div class="doc-subtabs">
+    <button class="doc-stab active" onclick="switchDocTab('noleggio',this)">🏢 Noleggio</button>
+    <button class="doc-stab" onclick="switchDocTab('finanziamento',this)">💳 Finanziamento</button>
+  </div>
+
+  <!-- Noleggio docs -->
+  <div class="doc-panel active" id="docpanel-noleggio"></div>
+
+  <!-- Finanziamento docs -->
+  <div class="doc-panel" id="docpanel-finanziamento"></div>
+
+  <!-- Hidden file input -->
+  <input type="file" id="doc-file-input" accept=".pdf,.doc,.docx,.xls,.xlsx" onchange="handleDocUpload(event)">
+</div>
+
+<!-- ================================================
+     PANEL 4: IMPOSTAZIONI / COEFFICIENTI
+     ================================================ -->
+<div class="panel" id="panel-impostazioni">
+  <div class="info-box">
+    <strong>📋 Gestione Coefficienti</strong>
+    Modifica i valori direttamente nella tabella e salva. I coefficienti sono espressi come
+    percentuale dell'importo (es. 8.2439 = 8.2439% → canone = importo × 0.082439).
+    I dati sono salvati in locale su questo dispositivo.
+  </div>
+
+  <div class="coeff-tabs">
+    <button class="coeff-tab active" onclick="switchCoeffTab('nm',this)">Noleggio Mensile</button>
+    <button class="coeff-tab" onclick="switchCoeffTab('nt',this)">Noleggio Trimestrale</button>
+    <button class="coeff-tab" onclick="switchCoeffTab('fi',this)">Finanziamento</button>
+    <button class="coeff-tab" onclick="switchCoeffTab('spese',this)">Spese Contratto</button>
+  </div>
+
+  <div class="coeff-panel active" id="coeffpanel-nm">
+    <div class="section">
+      <div class="section-title">Noleggio Operativo — Canone Mensile (%)</div>
+      <div class="coeff-table-wrap"><table class="coeff" id="table-nm"></table></div>
+      <div class="btn-row">
+        <button class="btn btn-accent" onclick="saveCoeff('nm')">💾 Salva</button>
+        <button class="btn btn-ghost" onclick="resetCoeff('nm')">↺ Reset default</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="coeff-panel" id="coeffpanel-nt">
+    <div class="section">
+      <div class="section-title">Noleggio Operativo — Canone Trimestrale (%)</div>
+      <div class="coeff-table-wrap"><table class="coeff" id="table-nt"></table></div>
+      <div class="btn-row">
+        <button class="btn btn-accent" onclick="saveCoeff('nt')">💾 Salva</button>
+        <button class="btn btn-ghost" onclick="resetCoeff('nt')">↺ Reset default</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="coeff-panel" id="coeffpanel-fi">
+    <div class="section">
+      <div class="section-title">Finanziamento Finalizzato — Rata Mensile (%)</div>
+      <div class="coeff-table-wrap"><table class="coeff" id="table-fi"></table></div>
+      <div class="btn-row">
+        <button class="btn btn-accent" onclick="saveCoeff('fi')">💾 Salva</button>
+        <button class="btn btn-ghost" onclick="resetCoeff('fi')">↺ Reset default</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="coeff-panel" id="coeffpanel-spese">
+    <div class="section">
+      <div class="section-title">Spese Contratto — Noleggio Operativo (€)</div>
+      <div class="coeff-table-wrap"><table class="coeff" id="table-spese-n"></table></div>
+      <div class="btn-row" style="margin-bottom:14px">
+        <button class="btn btn-accent" onclick="saveCoeff('spese-n')">💾 Salva</button>
+        <button class="btn btn-ghost" onclick="resetCoeff('spese-n')">↺ Reset</button>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">Spese Contratto — Finanziamento (€)</div>
+      <div class="coeff-table-wrap"><table class="coeff" id="table-spese-f"></table></div>
+      <div class="btn-row">
+        <button class="btn btn-accent" onclick="saveCoeff('spese-f')">💾 Salva</button>
+        <button class="btn btn-ghost" onclick="resetCoeff('spese-f')">↺ Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section" style="margin-top:4px">
+    <div class="section-title">ℹ️ Informazioni App</div>
+    <table class="spese-table">
+      <tr><td>Versione</td><td>1.0.0 — Aprile 2026</td></tr>
+      <tr><td>Coefficienti Noleggio</td><td>Aprile 2026</td></tr>
+      <tr><td>Coefficienti Finanziamento</td><td>Ottobre 2025</td></tr>
+      <tr><td>Provider</td><td>BCC Rent&amp;Lease SpA</td></tr>
+      <tr><td>Servizio clienti</td><td>0381.090565</td></tr>
+      <tr><td>E-mail</td><td>info@bccleasevigevano.it</td></tr>
+    </table>
+    <div style="margin-top:12px">
+      <button class="btn btn-danger" onclick="if(confirm('Cancellare tutti i dati salvati?')){localStorage.clear();location.reload();}">
+        🗑️ Reset completo dati locali
+      </button>
+    </div>
+  </div>
+</div>
+
+</div><!-- end scroll-area -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =======================================================
+   DATA — COEFFICIENTI DEFAULT (BCC Rent&Lease)
+   Formato: [fascia_importo_max, c12, c18, c24, c36, c48, c60]
+   Valori come % (es. 8.2439 non 0.082439) per editabilità
+   ======================================================= */
+const DURATE = [12, 18, 24, 36, 48, 60];
+
+const DEFAULT = {
+  nm: [ // Noleggio Mensile % — aprile 2026
+    [5000,   8.2439, 5.9311, 4.6504, 3.3168, 2.6190, 2.2041],
+    [15000,  8.2877, 5.9535, 4.6604, 3.3134, 2.6076, 2.1877],
+    [25000,  8.2722, 5.9386, 4.6458, 3.2988, 2.5928, 2.1725],
+    [50000,  8.2206, 5.8894, 4.5973, 3.2505, 2.5436, 2.1223],
+    [100000, 8.1133, 5.8065, 4.5278, 3.1946, 2.4944, 2.0769],
+    [999999, 8.0166, 5.7338, 4.4682, 3.1485, 2.4553, 2.0418],
+  ],
+  nt: [ // Noleggio Trimestrale % — aprile 2026
+    [5000,   24.9396, 17.9481, 14.0769, 10.0456, 7.9369, 6.6831],
+    [15000,  25.0586, 18.0065, 14.1003, 10.0309, 7.8996, 6.6313],
+    [25000,  25.0062, 17.9579, 14.0533, 9.9851,  7.8534, 6.5844],
+    [50000,  24.8319, 17.7965, 13.8973, 9.8329,  7.7003, 6.4293],
+    [100000, 24.4988, 17.5398, 13.6824, 9.6607,  7.5493, 6.2902],
+    [999999, 24.2013, 17.3163, 13.4995, 9.5197,  7.4297, 6.1830],
+  ],
+  fi: [ // Finanziamento Mensile % — ottobre 2025
+    [5000,  8.895, 6.054, 4.635, 3.223, 2.524, 2.112],
+    [15000, 8.872, 6.030, 4.612, 3.199, 2.500, 2.087],
+    [25000, 8.848, 6.007, 4.589, 3.176, 2.476, 2.063],
+    [50000, 8.848, 6.007, 4.589, 3.176, 2.476, 2.063],
+  ],
+  'spese-n': [ // Spese contratto Noleggio
+    ['≤ 5.000',       75],
+    ['5.001–10.000',  100],
+    ['10.001–25.000', 150],
+    ['25.001–50.000', 225],
+    ['50.001–100.000',300],
+    ['> 100.001',     300],
+    ['Spese incasso/canone', 4], // +IVA
+  ],
+  'spese-f': [ // Spese contratto Finanziamento
+    ['≤ 5.000',       50],
+    ['5.001–10.000',  75],
+    ['10.001–25.000', 100],
+    ['25.001–50.000', 150],
+    ['Spese incasso/rata',  4],  // +IVA
+    ['Spese istruttoria min', 100],
+    ['Spese istruttoria max', 300],
+  ],
+};
+
+/* =======================================================
+   DOCUMENTS — meta-data
+   ======================================================= */
+const DOCS = {
+  noleggio: [
+    {id:'n-domanda',   icon:'📋', name:'Domanda di Noleggio', desc:'Compilare in stampatello con Cellulare, E-mail e IBAN. Timbro e Firma cliente.', badge:'req'},
+    {id:'n-privacy',   icon:'🔒', name:'Privacy — Attestazione consegna', desc:'Solo firma del cliente (leggere e barrare le caselle SI/NO).', badge:'req'},
+    {id:'n-firma',     icon:'✍️', name:'Modulo Firma Digitale (IN.TE.SA.)', desc:'2 firme per esteso del legale rappresentante — senza timbro.', badge:'req'},
+    {id:'n-visura',    icon:'🏛️', name:'Visura camerale', desc:'Copia aggiornata della visura camerale del cliente.', badge:'req'},
+    {id:'n-docid',     icon:'🪪', name:'Doc. identità + tessera sanitaria', desc:'Documento di identità e tessera sanitaria validi del legale rappresentante.', badge:'req'},
+    {id:'n-offerta',   icon:'📃', name:'Offerta dettagliata fornitore', desc:'Preventivo o offerta dettagliata del bene da acquistare in noleggio.', badge:'req'},
+    {id:'n-moduniq',   icon:'📊', name:'Modello Unico 2025 (anno 2024)', desc:'Con quadri IVA e IRAP + ricevuta invio telematico. Solo per D.Ind., Sas, Snc, Coop — importi > 15.000 + IVA.', badge:'cond'},
+    {id:'n-bilancio',  icon:'📈', name:'Bilancio 2024 completo', desc:'Con nota integrativa + ricevuta deposito. Per Srl/Spa — importi > 30.000 + IVA.', badge:'cond'},
+    {id:'n-bilancion', icon:'📉', name:'Bilancio analitico 2025', desc:'Per tutte le tipologie — importi > 50.000 + IVA.', badge:'cond'},
+    {id:'n-antiricc',  icon:'🔍', name:'Fascicolo Antiriciclaggio', desc:'Compilato e firmato dal legale rappresentante e dal fornitore — importi > 50.000 + IVA.', badge:'cond'},
+    {id:'n-scheda',    icon:'📑', name:'Scheda prodotto Noleggio', desc:'Da consegnare al cliente per informazione sul prodotto.', badge:'req'},
+  ],
+  finanziamento: [
+    {id:'f-domanda',   icon:'📋', name:'Domanda di Finanziamento', desc:'Compilare in stampatello con Cellulare, E-mail e IBAN. Timbro e Firma cliente.', badge:'req'},
+    {id:'f-privacy',   icon:'🔒', name:'Privacy — Attestazione consegna', desc:'Solo firma del cliente.', badge:'req'},
+    {id:'f-firma',     icon:'✍️', name:'Modulo Firma Digitale (IN.TE.SA.)', desc:'2 firme per esteso del legale rappresentante — senza timbro.', badge:'req'},
+    {id:'f-visura',    icon:'🏛️', name:'Visura camerale', desc:'Copia aggiornata.', badge:'req'},
+    {id:'f-docid',     icon:'🪪', name:'Doc. identità + tessera sanitaria', desc:'Documento valido e tessera sanitaria del legale rappresentante.', badge:'req'},
+    {id:'f-offerta',   icon:'📃', name:'Offerta/Fattura (max 3 mesi)', desc:'Offerta dettagliata o copia fattura NON antecedente a 3 mesi.', badge:'req'},
+    {id:'f-moduniq',   icon:'📊', name:'Modello Unico 2025 (anno 2024)', desc:'Con quadri IVA e IRAP + invio telematico. Solo D.Ind., Sas, Snc, Coop — importi > 15.000 + IVA.', badge:'cond'},
+    {id:'f-bilancio',  icon:'📈', name:'Bilancio 2024 completo', desc:'Con nota integrativa + ricevuta deposito. Srl/Spa e Professionisti — importi > 30.000 + IVA.', badge:'cond'},
+    {id:'f-kit',       icon:'🎁', name:'Kit di benvenuto cliente', desc:'Da lasciare al cliente dopo firma contratto (guida servizi BCC).', badge:'req'},
+    {id:'f-scheda',    icon:'📑', name:'Scheda prodotto Finanziamento', desc:'Da consegnare al cliente per informazione sul prodotto.', badge:'req'},
+  ],
+};
+
+/* =======================================================
+   STATE
+   ======================================================= */
+let nDurata = 24, nPeriodo = 'mensile';
+let fDurata = 24;
+let activeDocUploadId = null;
+
+/* =======================================================
+   INIT
+   ======================================================= */
+document.addEventListener('DOMContentLoaded', () => {
+  loadAllCoeff();
+  buildCoeffTables();
+  buildDocPanels();
+  registerSW();
+});
+
+/* =======================================================
+   SERVICE WORKER — auto-update
+   ======================================================= */
+function registerSW() {
+  if (!('serviceWorker' in navigator)) return;
+  navigator.serviceWorker.register('./sw.js').then(reg => {
+    reg.addEventListener('updatefound', () => {
+      const nw = reg.installing;
+      nw.addEventListener('statechange', () => {
+        if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+          showUpdateBanner();
+        }
+      });
+    });
+  });
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    window.location.reload();
+  });
+}
+function showUpdateBanner() {
+  document.getElementById('update-banner').style.display = 'block';
+}
+function doUpdate() {
+  navigator.serviceWorker.getRegistration().then(reg => {
+    if (reg && reg.waiting) reg.waiting.postMessage({type:'SKIP_WAITING'});
+  });
+}
+
+/* =======================================================
+   TAB NAVIGATION
+   ======================================================= */
+function switchTab(name, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active','active-fin'));
+  document.getElementById('panel-'+name).classList.add('active');
+  if (name === 'finanziamento') btn.classList.add('active-fin');
+  else btn.classList.add('active');
+}
+
+/* =======================================================
+   COEFFICIENT STORAGE
+   ======================================================= */
+let COEFF = {};
+function loadAllCoeff() {
+  ['nm','nt','fi','spese-n','spese-f'].forEach(k => {
+    const saved = localStorage.getItem('slof_coeff_'+k);
+    COEFF[k] = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(DEFAULT[k]));
+  });
+}
+function saveCoeff(key) {
+  readTableToCoeff(key);
+  localStorage.setItem('slof_coeff_'+key, JSON.stringify(COEFF[key]));
+  showToast('✅ Coefficienti salvati');
+}
+function resetCoeff(key) {
+  if (!confirm('Ripristinare i valori originali per questa tabella?')) return;
+  COEFF[key] = JSON.parse(JSON.stringify(DEFAULT[key]));
+  localStorage.removeItem('slof_coeff_'+key);
+  buildTableForKey(key);
+  showToast('↺ Valori ripristinati');
+}
+
+/* =======================================================
+   COEFFICIENT TABLES — build + read
+   ======================================================= */
+const COEFF_KEYS = ['nm','nt','fi'];
+function buildCoeffTables() {
+  COEFF_KEYS.forEach(k => buildTableForKey(k));
+  buildSpeseTable('spese-n');
+  buildSpeseTable('spese-f');
+}
+
+function buildTableForKey(key) {
+  const data = COEFF[key];
+  const tbl = document.getElementById('table-'+key);
+  if (!tbl) return;
+  const header = `<thead><tr><th>Fascia (€)</th>${DURATE.map(d=>`<th>${d} m</th>`).join('')}</tr></thead>`;
+  let body = '<tbody>';
+  data.forEach((row, ri) => {
+    const fascia = formatFascia(row[0], key, ri, data.length);
+    body += `<tr><td style="color:var(--text2);font-size:10px;white-space:nowrap">${fascia}</td>`;
+    for (let ci = 1; ci <= 6; ci++) {
+      body += `<td><input type="number" step="0.0001" value="${parseFloat(row[ci]).toFixed(4)}"
+               data-key="${key}" data-ri="${ri}" data-ci="${ci}"></td>`;
+    }
+    body += '</tr>';
+  });
+  body += '</tbody>';
+  tbl.innerHTML = header + body;
+}
+
+function formatFascia(max, key, ri, total) {
+  const prevData = COEFF[key];
+  const prev = ri === 0 ? 0 : prevData[ri-1][0];
+  if (ri === 0) return `≤ ${fmt(max)}`;
+  if (ri === total-1) return `> ${fmt(prev)}`;
+  return `${fmt(prev+1)}–${fmt(max)}`;
+}
+function fmt(n) { return Number(n).toLocaleString('it-IT'); }
+
+function readTableToCoeff(key) {
+  const tbl = document.getElementById('table-'+key);
+  if (!tbl) { readSpeseTable(key); return; }
+  tbl.querySelectorAll('input').forEach(inp => {
+    const ri = +inp.dataset.ri, ci = +inp.dataset.ci;
+    COEFF[key][ri][ci] = parseFloat(inp.value) || 0;
+  });
+}
+
+function buildSpeseTable(key) {
+  const data = COEFF[key];
+  const tbl = document.getElementById('table-'+key);
+  const header = '<thead><tr><th>Fascia / Voce</th><th>Importo (€)</th></tr></thead>';
+  let body = '<tbody>';
+  data.forEach((row, ri) => {
+    body += `<tr><td style="color:var(--text2);font-size:10px;text-align:left">${row[0]}</td>
+             <td><input type="number" step="0.01" value="${row[1]}"
+             data-key="${key}" data-ri="${ri}"></td></tr>`;
+  });
+  body += '</tbody>';
+  tbl.innerHTML = header + body;
+}
+function readSpeseTable(key) {
+  const tbl = document.getElementById('table-'+key);
+  if (!tbl) return;
+  tbl.querySelectorAll('input').forEach(inp => {
+    COEFF[key][+inp.dataset.ri][1] = parseFloat(inp.value) || 0;
+  });
+}
+
+function switchCoeffTab(name, btn) {
+  document.querySelectorAll('.coeff-tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.coeff-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('coeffpanel-'+name).classList.add('active');
+}
+
+/* =======================================================
+   NOLEGGIO — SIMULATOR
+   ======================================================= */
+function setDurata(product, val, btn) {
+  const group = document.getElementById(product+'-durata-group');
+  group.querySelectorAll('.radio-btn').forEach(b => b.classList.remove('active','active-fin'));
+  btn.classList.add('active');
+  if (product === 'n') { nDurata = val; calcNoleggio(); }
+  else { fDurata = val; calcFinanziamento(); }
+}
+
+function setPeriodo(val, btn) {
+  document.getElementById('n-periodo-group').querySelectorAll('.radio-btn')
+    .forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  nPeriodo = val;
+  calcNoleggio();
+}
+
+function getCoeffN(importo) {
+  const table = nPeriodo === 'mensile' ? COEFF.nm : COEFF.nt;
+  const row = table.find(r => importo <= r[0]) || table[table.length-1];
+  const idx = DURATE.indexOf(nDurata) + 1;
+  return row[idx] / 100;
+}
+
+function getSpeseContrN(importo) {
+  const sn = COEFF['spese-n'];
+  const limits = [5000,10000,25000,50000,100000,Infinity];
+  for (let i=0; i<limits.length; i++) {
+    if (importo <= limits[i]) return sn[i][1];
+  }
+  return sn[sn.length-2][1];
+}
+
+function calcNoleggio() {
+  const importo = parseFloat(document.getElementById('n-importo').value);
+  if (!importo || importo < 1) { document.getElementById('n-result-box').style.display='none'; return; }
+  document.getElementById('n-result-box').style.display='block';
+
+  const coeff = getCoeffN(importo);
+  const canone = importo * coeff;
+  const nCanoni = nPeriodo === 'mensile' ? nDurata : Math.ceil(nDurata / 3);
+  const speseContr = getSpeseContrN(importo);
+  const speseIncasso = COEFF['spese-n'][6][1] || 4;
+  const totale = canone * nCanoni + speseContr + speseIncasso * nCanoni;
+
+  document.getElementById('n-result-label').textContent =
+    nPeriodo === 'mensile' ? 'Canone Mensile' : 'Canone Trimestrale';
+  document.getElementById('n-canone').textContent = fmtEur(canone);
+  document.getElementById('n-ncanoni').textContent = nCanoni + (nPeriodo==='mensile'?' mesi':' trimestri');
+  document.getElementById('n-spese-contr').textContent = fmtEur(speseContr);
+  document.getElementById('n-importo-fin').textContent = fmtEur(importo) + ' +IVA';
+  document.getElementById('n-totale').textContent = '≈ ' + fmtEur(totale) + ' +IVA';
+
+  buildChecklist('n-checklist', 'noleggio', importo);
+}
+
+/* =======================================================
+   FINANZIAMENTO — SIMULATOR
+   ======================================================= */
+function getCoeffF(importo) {
+  const table = COEFF.fi;
+  const row = table.find(r => importo <= r[0]) || table[table.length-1];
+  const idx = DURATE.indexOf(fDurata) + 1;
+  return row[idx] / 100;
+}
+function getSpeseContrF(importo) {
+  const sf = COEFF['spese-f'];
+  const limits = [5000,10000,25000,50000];
+  for (let i=0; i<limits.length; i++) {
+    if (importo <= limits[i]) return sf[i][1];
+  }
+  return sf[3][1];
+}
+
+function calcFinanziamento() {
+  const importo = parseFloat(document.getElementById('f-importo').value);
+  if (!importo || importo < 1) { document.getElementById('f-result-box').style.display='none'; return; }
+  if (importo > 50000) {
+    showToast('⚠️ Max € 50.000 per il finanziamento'); return;
+  }
+  document.getElementById('f-result-box').style.display='block';
+
+  const coeff = getCoeffF(importo);
+  const rata = importo * coeff;
+  const nRate = fDurata;
+  const speseContr = getSpeseContrF(importo);
+  const speseIncasso = COEFF['spese-f'][4][1] || 4;
+  const totale = rata * nRate + speseContr + speseIncasso * nRate;
+
+  document.getElementById('f-rata').textContent = fmtEur(rata);
+  document.getElementById('f-nrate').textContent = nRate + ' rate';
+  document.getElementById('f-spese-contr').textContent = fmtEur(speseContr);
+  document.getElementById('f-importo-show').textContent = fmtEur(importo) + ' (IVA incl.)';
+  document.getElementById('f-totale').textContent = '≈ ' + fmtEur(totale);
+
+  // importo netto IVA 22% per soglie documenti
+  const importoNetto = importo / 1.22;
+  buildChecklist('f-checklist', 'finanziamento', importoNetto);
+}
+
+/* =======================================================
+   CHECKLIST DOCUMENTI (dinamica in base all'importo)
+   ======================================================= */
+function buildChecklist(containerId, tipo, importoNetto) {
+  const container = document.getElementById(containerId);
+  const isN = tipo === 'noleggio';
+
+  let items = [
+    {label:'Domanda ('+(isN?'Noleggio':'Finanziamento')+')', sub:'Compilata in stampatello + Cellulare, E-mail, IBAN', type:'req'},
+    {label:'Privacy — Attestazione consegna', sub:'Solo firma cliente', type:'req'},
+    {label:'Modulo Firma Digitale IN.TE.SA.', sub:'2 firme per esteso, senza timbro', type:'req'},
+    {label:'Visura camerale', sub:'Copia aggiornata', type:'req'},
+    {label:'Doc. identità + tessera sanitaria', sub:'Validi, del legale rappresentante', type:'req'},
+    {label: isN ? 'Offerta dettagliata fornitore' : 'Offerta/Fattura (non > 3 mesi)', sub:'', type:'req'},
+  ];
+
+  if (importoNetto > 15000) {
+    items.push({
+      label:'Modello Unico 2025 (redditi 2024)',
+      sub:'Con quadri IVA+IRAP + invio telematico — D.Ind, Sas, Snc, Coop',
+      type:'cond'
+    });
+  }
+  if (importoNetto > 30000) {
+    items.push({
+      label:'Bilancio 2024 con nota integrativa',
+      sub:'Con ricevuta deposito — Srl, Spa'+(isN?'':', Professionisti'),
+      type:'cond'
+    });
+  }
+  if (isN && importoNetto > 50000) {
+    items.push(
+      {label:'Bilancio analitico 2025', sub:'Per tutte le tipologie', type:'cond'},
+      {label:'Fascicolo Antiriciclaggio', sub:'Compilato e firmato da cliente e fornitore', type:'cond'}
+    );
+  }
+
+  let html = `<div class="cl-title">📋 Documenti necessari per questa pratica</div>`;
+  items.forEach(it => {
+    html += `<div class="cl-item ${it.type}">
+      <div class="cl-icon">${it.type==='req'?'✅':'⚠️'}</div>
+      <div class="cl-text"><strong>${it.label}</strong><span>${it.sub}</span></div>
+    </div>`;
+  });
+  container.innerHTML = html;
+}
+
+/* =======================================================
+   DOCUMENTS PANEL
+   ======================================================= */
+function buildDocPanels() {
+  ['noleggio','finanziamento'].forEach(tipo => {
+    const panel = document.getElementById('docpanel-'+tipo);
+    let html = '';
+    DOCS[tipo].forEach(doc => {
+      const stored = localStorage.getItem('slof_doc_'+doc.id);
+      const hasFile = !!stored;
+      html += `<div class="doc-card">
+        <div class="doc-icon">${doc.icon}</div>
+        <div class="doc-info">
+          <div class="doc-name">${doc.name}</div>
+          <div class="doc-desc">${doc.desc}</div>
+          <div class="doc-badge ${doc.badge==='req'?'badge-req':'badge-cond'}">
+            ${doc.badge==='req'?'Obbligatorio':'Condizionale'}
+          </div>
+        </div>
+        <div class="doc-actions">
+          <button class="doc-btn doc-btn-view" onclick="viewDoc('${doc.id}')" ${!hasFile?'disabled style="opacity:.4"':''}>
+            👁 Vedi
+          </button>
+          <button class="doc-btn doc-btn-replace" onclick="startUpload('${doc.id}')">
+            ⬆ ${hasFile?'Sostituisci':'Carica'}
+          </button>
+          <div class="doc-status ${hasFile?'uploaded':'empty'}" id="doc-status-${doc.id}">
+            ${hasFile?'✅ Caricato':'— Non caricato'}
+          </div>
+        </div>
+      </div>`;
+    });
+    panel.innerHTML = html;
+  });
+}
+
+function switchDocTab(name, btn) {
+  document.querySelectorAll('.doc-stab').forEach(b => b.classList.remove('active','active-fin'));
+  document.querySelectorAll('.doc-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add(name==='finanziamento'?'active-fin':'active');
+  document.getElementById('docpanel-'+name).classList.add('active');
+}
+
+function startUpload(docId) {
+  activeDocUploadId = docId;
+  document.getElementById('doc-file-input').click();
+}
+
+function handleDocUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  if (file.size > 4 * 1024 * 1024) {
+    showToast('⚠️ File troppo grande (max 4 MB)');
+    event.target.value = '';
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      localStorage.setItem('slof_doc_'+activeDocUploadId, e.target.result);
+      buildDocPanels();
+      showToast('✅ Documento caricato');
+    } catch(err) {
+      showToast('⚠️ Spazio insufficiente. File troppo grande.');
+    }
+  };
+  reader.readAsDataURL(file);
+  event.target.value = '';
+}
+
+function viewDoc(docId) {
+  const data = localStorage.getItem('slof_doc_'+docId);
+  if (!data) { showToast('Nessun file caricato'); return; }
+  const win = window.open();
+  if (data.startsWith('data:application/pdf')) {
+    win.document.write(`<iframe src="${data}" width="100%" height="100%" style="border:none"></iframe>`);
+  } else {
+    win.location.href = data;
+  }
+}
+
+/* =======================================================
+   UTILITIES
+   ======================================================= */
+function fmtEur(n) {
+  return n.toLocaleString('it-IT', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' €';
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+</script>
+</body>
+</html>
