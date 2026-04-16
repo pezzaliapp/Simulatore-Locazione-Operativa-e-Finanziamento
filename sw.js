@@ -1,19 +1,25 @@
 // ============================================================
 // SERVICE WORKER — SLOF v1.0.0
-// Incrementa CACHE_VERSION ad ogni deploy → auto-update garantito
+// © 2026 Alessandro Pezzali — PezzaliApp — MIT License
+// Per aggiornare: incrementa CACHE_VERSION e fai push
 // ============================================================
 const CACHE_VERSION = 'slof-v1.0.0';
-const ASSETS = ['./', './index.html', './manifest.json', './icon-192.svg', './icon-512.svg'];
+const ASSETS = [
+  './',
+  './index.html',
+  './manifest.json',
+  './icon-180.png',
+  './icon-192.png',
+  './icon-512.png',
+];
 
-// INSTALL: pre-cache + skipWaiting immediato
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_VERSION).then(cache => cache.addAll(ASSETS))
   );
-  self.skipWaiting();
+  self.skipWaiting(); // attivazione immediata
 });
 
-// ACTIVATE: rimuovi cache vecchie + prendi controllo immediato
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys()
@@ -22,7 +28,7 @@ self.addEventListener('activate', event => {
   );
 });
 
-// FETCH: Network-first, cache come fallback
+// Network-first → cache fallback
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
   event.respondWith(
@@ -37,7 +43,7 @@ self.addEventListener('fetch', event => {
   );
 });
 
-// Messaggio dal client → skip waiting manuale se necessario
+// Ricezione messaggio da client per skip waiting manuale
 self.addEventListener('message', event => {
   if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
