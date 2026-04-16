@@ -135,8 +135,12 @@ ogni responsabilità per:
 I valori ufficiali e vincolanti sono **esclusivamente quelli comunicati da BCC Rent&Lease S.p.A.**
 mediante documentazione contrattuale ufficiale.
 
-**Aggiornamento coefficienti.** L'utente è responsabile dell'aggiornamento dei
-coefficienti tramite la sezione Impostazioni in caso di variazioni da parte dell'istituto.
+**Coefficienti a titolo di esempio.** I coefficienti precaricati nell'applicazione sono
+forniti **esclusivamente a titolo di esempio operativo**. Ogni azienda, agente o utente
+può disporre di condizioni, accordi e coefficienti propri, negoziati direttamente con
+l'istituto finanziatore, che possono differire significativamente da quelli inseriti
+per default. L'utente è responsabile dell'aggiornamento dei coefficienti nella sezione
+Impostazioni con i valori reali del proprio accordo commerciale.
 
 ---
 
